@@ -212,15 +212,24 @@ function wrap(sqlDb: SqlJsDatabase): AppDatabase {
   };
 }
 
+async function loadWasmBinary(): Promise<ArrayBuffer> {
+  const candidates = [
+    path.join(process.cwd(), "public", "sql-wasm.wasm"),
+    path.join(process.cwd(), "node_modules", "sql.js", "dist", "sql-wasm.wasm"),
+  ];
+  for (const file of candidates) {
+    if (fs.existsSync(file)) {
+      return new Uint8Array(fs.readFileSync(file)).buffer;
+    }
+  }
+  const res = await fetch("https://sql.js.org/dist/sql-wasm.wasm");
+  if (!res.ok) throw new Error(`Failed to download sql-wasm.wasm (${res.status})`);
+  return res.arrayBuffer();
+}
+
 async function createDb(): Promise<AppDatabase> {
-  const wasmPath = path.join(process.cwd(), "node_modules", "sql.js", "dist", "sql-wasm.wasm");
-  const wasmBinary = fs.existsSync(wasmPath)
-    ? new Uint8Array(fs.readFileSync(wasmPath)).buffer
-    : undefined;
-  const SQL = await initSqlJs({
-    wasmBinary,
-    locateFile: (file) => path.join(process.cwd(), "node_modules", "sql.js", "dist", file),
-  });
+  const wasmBinary = await loadWasmBinary();
+  const SQL = await initSqlJs({ wasmBinary });
 
   const dbPath = resolveDbPath();
   let sqlDb: SqlJsDatabase;

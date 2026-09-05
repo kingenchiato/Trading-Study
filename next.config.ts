@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   serverExternalPackages: ["sql.js"],
   poweredByHeader: false,
+  outputFileTracingIncludes: {
+    "/**": ["./public/sql-wasm.wasm", "./node_modules/sql.js/dist/sql-wasm.wasm"],
+  },
   images: {
     remotePatterns: [],
   },
