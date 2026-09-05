@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Activity, RefreshCw } from "lucide-react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/lib/locale";
@@ -25,72 +25,23 @@ const W = 960;
 const H = 360;
 const PAD = { top: 24, right: 72, bottom: 36, left: 16 };
 const VOL_H = 48;
+const GREEN = "#16c784";
+const RED = "#ea3943";
 
-function buildAreaPath(
-  prices: { t: number; v: number }[],
+type Pt = { t: number; v: number };
+
+function buildLineAndArea(
+  prices: Pt[],
   xOf: (t: number) => number,
   yOf: (v: number) => number,
   baselineY: number,
-  mode: "above" | "below",
-): string {
-  if (prices.length < 2) return "";
-  const parts: string[] = [];
-  let drawing = false;
-
-  for (let i = 0; i < prices.length - 1; i++) {
-    const a = prices[i]!;
-    const b = prices[i + 1]!;
-    const aAbove = a.v >= prices[0]!.v;
-    const bAbove = b.v >= prices[0]!.v;
-    const want = mode === "above";
-
-    if (aAbove === want && bAbove === want) {
-      if (!drawing) {
-        parts.push(`M ${xOf(a.t)} ${baselineY} L ${xOf(a.t)} ${yOf(a.v)}`);
-        drawing = true;
-      }
-      parts.push(`L ${xOf(b.t)} ${yOf(b.v)}`);
-    } else if (aAbove === want || bAbove === want) {
-      const baseline = prices[0]!.v;
-      const denom = b.v - a.v || 1e-9;
-      const ratio = (baseline - a.v) / denom;
-      const cx = a.t + (b.t - a.t) * ratio;
-      const cy = baseline;
-
-      if (aAbove === want) {
-        if (!drawing) {
-          parts.push(`M ${xOf(a.t)} ${baselineY} L ${xOf(a.t)} ${yOf(a.v)}`);
-          drawing = true;
-        }
-        parts.push(`L ${xOf(cx)} ${yOf(cy)} L ${xOf(cx)} ${baselineY} Z`);
-        drawing = false;
-      } else {
-        parts.push(`M ${xOf(cx)} ${baselineY} L ${xOf(cx)} ${yOf(cy)} L ${xOf(b.t)} ${yOf(b.v)}`);
-        drawing = true;
-      }
-    } else if (drawing) {
-      parts.push(`L ${xOf(a.t)} ${baselineY} Z`);
-      drawing = false;
-    }
-  }
-
-  if (drawing) {
-    const last = prices[prices.length - 1]!;
-    parts.push(`L ${xOf(last.t)} ${baselineY} Z`);
-  }
-
-  return parts.join(" ");
-}
-
-function buildLinePath(
-  prices: { t: number; v: number }[],
-  xOf: (t: number) => number,
-  yOf: (v: number) => number,
-): string {
-  if (!prices.length) return "";
-  return prices
-    .map((p, i) => `${i === 0 ? "M" : "L"} ${xOf(p.t)} ${yOf(p.v)}`)
-    .join(" ");
+): { line: string; area: string } {
+  if (prices.length < 2) return { line: "", area: "" };
+  const line = prices.map((p, i) => `${i === 0 ? "M" : "L"} ${xOf(p.t).toFixed(2)} ${yOf(p.v).toFixed(2)}`).join(" ");
+  const first = prices[0]!;
+  const last = prices[prices.length - 1]!;
+  const area = `${line} L ${xOf(last.t).toFixed(2)} ${baselineY.toFixed(2)} L ${xOf(first.t).toFixed(2)} ${baselineY.toFixed(2)} Z`;
+  return { line, area };
 }
 
 function formatAxisTime(ts: number, days: number, locale: Locale): string {
@@ -106,6 +57,7 @@ function formatAxisTime(ts: number, days: number, locale: Locale): string {
 }
 
 export function MarketPriceChart({ locale, t }: Props) {
+  const gid = useId().replace(/:/g, "");
   const [coinId, setCoinId] = useState("ripple");
   const [quoteId, setQuoteId] = useState("jpy");
   const [days, setDays] = useState(7);
@@ -180,6 +132,7 @@ export function MarketPriceChart({ locale, t }: Props) {
     const xOf = (t: number) => PAD.left + ((t - tMin) / (tMax - tMin || 1)) * plotW;
     const yOf = (v: number) => PAD.top + ((yMax - v) / (yMax - yMin || 1)) * plotH;
     const baselineY = yOf(baseline);
+    const paths = buildLineAndArea(prices, xOf, yOf, baselineY);
 
     const volumes = data?.volumes ?? [];
     const maxVol = Math.max(...volumes.map((v) => v.v), 1);
@@ -205,12 +158,12 @@ export function MarketPriceChart({ locale, t }: Props) {
       baseline,
       last,
       up,
+      plotW,
       plotH,
       xLabels,
       yLabels,
-      abovePath: buildAreaPath(prices, xOf, yOf, baselineY, "above"),
-      belowPath: buildAreaPath(prices, xOf, yOf, baselineY, "below"),
-      linePath: buildLinePath(prices, xOf, yOf),
+      linePath: paths.line,
+      areaPath: paths.area,
     };
   }, [data, days, locale]);
 
@@ -321,7 +274,7 @@ export function MarketPriceChart({ locale, t }: Props) {
           </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-xl border border-white/5 bg-ink-950/60">
+        <div className="relative overflow-hidden rounded-xl border border-white/8 bg-[#070b14]">
           {loading && !data ? (
             <div className="flex h-[280px] items-center justify-center text-sm text-mist-muted md:h-[360px]">
               {t.marketLoading}
@@ -339,14 +292,73 @@ export function MarketPriceChart({ locale, t }: Props) {
               className="h-auto w-full touch-pan-y"
               role="img"
               aria-label={`${coin.symbol} ${quote.label} ${t.marketTitle}`}
+              shapeRendering="geometricPrecision"
               onMouseMove={onMove}
               onMouseLeave={() => setHoverIdx(null)}
             >
               <defs>
-                <linearGradient id="volFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#8796b0" stopOpacity="0.35" />
-                  <stop offset="100%" stopColor="#8796b0" stopOpacity="0.05" />
+                <linearGradient id={`vol-${gid}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#8796b0" stopOpacity="0.28" />
+                  <stop offset="100%" stopColor="#8796b0" stopOpacity="0.02" />
                 </linearGradient>
+
+                {/* Soft fill: strong near the price line, fades to transparent at baseline */}
+                <linearGradient
+                  id={`up-${gid}`}
+                  gradientUnits="userSpaceOnUse"
+                  x1="0"
+                  y1={chart.baselineY}
+                  x2="0"
+                  y2={PAD.top}
+                >
+                  <stop offset="0%" stopColor={GREEN} stopOpacity="0" />
+                  <stop offset="55%" stopColor={GREEN} stopOpacity="0.12" />
+                  <stop offset="100%" stopColor={GREEN} stopOpacity="0.38" />
+                </linearGradient>
+                <linearGradient
+                  id={`down-${gid}`}
+                  gradientUnits="userSpaceOnUse"
+                  x1="0"
+                  y1={chart.baselineY}
+                  x2="0"
+                  y2={PAD.top + chart.plotH}
+                >
+                  <stop offset="0%" stopColor={RED} stopOpacity="0" />
+                  <stop offset="55%" stopColor={RED} stopOpacity="0.12" />
+                  <stop offset="100%" stopColor={RED} stopOpacity="0.38" />
+                </linearGradient>
+
+                {/* Stroke flips color exactly at the baseline */}
+                <linearGradient
+                  id={`stroke-${gid}`}
+                  gradientUnits="userSpaceOnUse"
+                  x1="0"
+                  y1={chart.baselineY + 0.75}
+                  x2="0"
+                  y2={chart.baselineY - 0.75}
+                >
+                  <stop offset="0%" stopColor={RED} />
+                  <stop offset="49%" stopColor={RED} />
+                  <stop offset="51%" stopColor={GREEN} />
+                  <stop offset="100%" stopColor={GREEN} />
+                </linearGradient>
+
+                <clipPath id={`above-${gid}`}>
+                  <rect
+                    x={PAD.left}
+                    y={PAD.top}
+                    width={chart.plotW}
+                    height={Math.max(0, chart.baselineY - PAD.top)}
+                  />
+                </clipPath>
+                <clipPath id={`below-${gid}`}>
+                  <rect
+                    x={PAD.left}
+                    y={chart.baselineY}
+                    width={chart.plotW}
+                    height={Math.max(0, PAD.top + chart.plotH - chart.baselineY)}
+                  />
+                </clipPath>
               </defs>
 
               {chart.yLabels.map((tick) => (
@@ -356,7 +368,7 @@ export function MarketPriceChart({ locale, t }: Props) {
                     x2={W - PAD.right}
                     y1={tick.y}
                     y2={tick.y}
-                    stroke="rgba(255,255,255,0.06)"
+                    stroke="rgba(255,255,255,0.05)"
                   />
                   <text
                     x={W - PAD.right + 8}
@@ -374,9 +386,9 @@ export function MarketPriceChart({ locale, t }: Props) {
                 const x = chart.xOf(v.t);
                 const next = chart.volumes[i + 1];
                 const width = next ? Math.max(1, chart.xOf(next.t) - x - 1) : 3;
-                const h = (v.v / chart.maxVol) * VOL_H;
+                const h = (v.v / chart.maxVol) * VOL_H * 0.85;
                 const y = H - PAD.bottom - h;
-                return <rect key={v.t} x={x} y={y} width={width} height={h} fill="url(#volFill)" />;
+                return <rect key={v.t} x={x} y={y} width={width} height={h} fill={`url(#vol-${gid})`} />;
               })}
 
               <line
@@ -384,19 +396,31 @@ export function MarketPriceChart({ locale, t }: Props) {
                 x2={W - PAD.right}
                 y1={chart.baselineY}
                 y2={chart.baselineY}
-                stroke="rgba(200,212,232,0.35)"
-                strokeDasharray="4 4"
+                stroke="rgba(232,238,248,0.45)"
+                strokeWidth="1"
+                strokeDasharray="3 4"
+                vectorEffect="non-scaling-stroke"
               />
 
-              <path d={chart.abovePath} fill="rgba(22,199,132,0.28)" />
-              <path d={chart.belowPath} fill="rgba(234,57,67,0.28)" />
+              <path
+                d={chart.areaPath}
+                fill={`url(#up-${gid})`}
+                clipPath={`url(#above-${gid})`}
+              />
+              <path
+                d={chart.areaPath}
+                fill={`url(#down-${gid})`}
+                clipPath={`url(#below-${gid})`}
+              />
+
               <path
                 d={chart.linePath}
                 fill="none"
-                stroke={chart.up ? "#16c784" : "#ea3943"}
-                strokeWidth="2.2"
+                stroke={`url(#stroke-${gid})`}
+                strokeWidth="1.35"
                 strokeLinejoin="round"
                 strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
               />
 
               {chart.xLabels.map((tick) => (
@@ -414,14 +438,14 @@ export function MarketPriceChart({ locale, t }: Props) {
 
               <rect
                 x={W - PAD.right - 4}
-                y={chart.yOf(chart.last.v) - 11}
-                width={68}
-                height={22}
+                y={chart.yOf(chart.last.v) - 10}
+                width={64}
+                height={20}
                 rx="4"
-                fill={chart.up ? "#16c784" : "#ea3943"}
+                fill={chart.up ? GREEN : RED}
               />
               <text
-                x={W - PAD.right + 30}
+                x={W - PAD.right + 28}
                 y={chart.yOf(chart.last.v) + 4}
                 textAnchor="middle"
                 fill="#05070c"
@@ -439,16 +463,18 @@ export function MarketPriceChart({ locale, t }: Props) {
                     x2={chart.xOf(data.prices[hoverIdx]!.t)}
                     y1={PAD.top}
                     y2={H - PAD.bottom}
-                    stroke="rgba(255,255,255,0.25)"
+                    stroke="rgba(255,255,255,0.22)"
                     strokeDasharray="3 3"
+                    vectorEffect="non-scaling-stroke"
                   />
                   <circle
                     cx={chart.xOf(data.prices[hoverIdx]!.t)}
                     cy={chart.yOf(data.prices[hoverIdx]!.v)}
-                    r="4.5"
-                    fill={chart.up ? "#16c784" : "#ea3943"}
+                    r="3.5"
+                    fill={data.prices[hoverIdx]!.v >= chart.baseline ? GREEN : RED}
                     stroke="#05070c"
-                    strokeWidth="2"
+                    strokeWidth="1.5"
+                    vectorEffect="non-scaling-stroke"
                   />
                 </>
               )}
