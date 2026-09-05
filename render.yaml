@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: nexora
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start:online
+    healthCheckPath: /ja
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: ALLOW_LOCAL_CHECKOUT
+        value: "true"
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_NAME
+        value: Sガンダム
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false

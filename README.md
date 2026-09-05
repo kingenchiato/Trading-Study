@@ -50,13 +50,40 @@ Open http://localhost:3000 (redirects to `/ja`).
 
 Rotate `AUTH_SECRET` and admin password before public launch.
 
-## Go live (revenue)
+## Deploy online (from this GitHub repo)
 
-1. Create a [Stripe](https://stripe.com) Japan account
-2. Put live keys in `.env.local`
-3. Set `ALLOW_LOCAL_CHECKOUT=false`
-4. Point webhook to `https://your-domain/api/stripe/webhook`
-5. Deploy (`npm run build && npm start`) behind HTTPS
+Repo: https://github.com/kingenchiato/Trading-Study
+
+### Recommended: Render (connect GitHub → public HTTPS URL)
+
+1. Open [https://dashboard.render.com/select-repo?type=web](https://dashboard.render.com/select-repo?type=web)
+2. Sign in with GitHub and select **`kingenchiato/Trading-Study`**
+3. Settings:
+   - **Build Command:** `npm ci && npm run build`
+   - **Start Command:** `npm run start:online`
+   - **Instance:** Free
+4. Environment variables:
+
+| Key | Value |
+|-----|--------|
+| `AUTH_SECRET` | long random string (32+ chars) |
+| `ADMIN_EMAIL` | `kingenchiato@gmail.com` |
+| `ADMIN_PASSWORD` | your admin password |
+| `ADMIN_NAME` | `Sガンダム` |
+| `NEXT_PUBLIC_APP_URL` | your Render URL, e.g. `https://nexora-xxxx.onrender.com` |
+| `ALLOW_LOCAL_CHECKOUT` | `true` (until Stripe is configured) |
+
+5. Deploy → open the Render URL → `/ja/login`
+
+Note: Free Render sleeps after idle and may reset the SQLite file on redeploy unless you add a paid disk. Re-seed happens automatically via `start:online` when the DB is missing.
+
+### Docker (VPS / Railway)
+
+```bash
+docker build -t nexora .
+docker run -p 3000:3000 --env-file .env.local -v nexora-data:/app/data nexora
+```
+
 
 ## Business model (built-in)
 
