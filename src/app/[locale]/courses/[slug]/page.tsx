@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getDictionary } from "@/i18n/dictionaries";
 import { userHasCourseAccess, formatYen, courseProgress } from "@/lib/access";
 import { getSessionUser } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { ensureBootstrapped } from "@/lib/db";
 import { isLocale, localize, type Locale } from "@/lib/locale";
 import { EnrollActions } from "@/components/EnrollActions";
 
@@ -16,7 +16,7 @@ export default async function CourseDetailPage({
   if (!isLocale(raw)) notFound();
   const locale = raw as Locale;
   const t = getDictionary(locale);
-  const db = getDb();
+  const db = await ensureBootstrapped();
   const row = db.prepare(`SELECT * FROM courses WHERE slug = ? AND is_published = 1`).get(slug) as
     | Record<string, unknown>
     | undefined;

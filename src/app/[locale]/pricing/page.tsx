@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getDictionary } from "@/i18n/dictionaries";
 import { formatYen } from "@/lib/access";
-import { getDb } from "@/lib/db";
+import { ensureBootstrapped } from "@/lib/db";
 import { isLocale, localize, type Locale } from "@/lib/locale";
 import { PlanCheckoutButton } from "@/components/PlanCheckoutButton";
 import { TeamInquiryForm } from "@/components/TeamInquiryForm";
@@ -11,8 +11,9 @@ export default async function PricingPage({ params }: { params: Promise<{ locale
   if (!isLocale(raw)) notFound();
   const locale = raw as Locale;
   const t = getDictionary(locale);
+  const db = await ensureBootstrapped();
   const plans = (
-    getDb().prepare(`SELECT * FROM plans WHERE is_active = 1 ORDER BY price_jpy ASC`).all() as Record<
+    db.prepare(`SELECT * FROM plans WHERE is_active = 1 ORDER BY price_jpy ASC`).all() as Record<
       string,
       unknown
     >[]

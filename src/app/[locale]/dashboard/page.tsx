@@ -3,7 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { getDictionary } from "@/i18n/dictionaries";
 import { courseProgress } from "@/lib/access";
 import { getSessionUser } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { ensureBootstrapped } from "@/lib/db";
 import { isLocale, localize, type Locale } from "@/lib/locale";
 
 export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -14,7 +14,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   const user = await getSessionUser();
   if (!user) redirect(`/${locale}/login?next=/${locale}/dashboard`);
 
-  const db = getDb();
+  const db = await ensureBootstrapped();
   const enrollments = (
     db
       .prepare(

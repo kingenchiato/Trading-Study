@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CourseCard } from "@/components/CourseCard";
 import { getDictionary } from "@/i18n/dictionaries";
-import { getDb } from "@/lib/db";
+import { ensureBootstrapped } from "@/lib/db";
 import { isLocale, localize, type Locale } from "@/lib/locale";
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
@@ -11,7 +11,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   if (!isLocale(raw)) notFound();
   const locale = raw as Locale;
   const t = getDictionary(locale);
-  const db = getDb();
+  const db = await ensureBootstrapped();
 
   const courses = (
     db

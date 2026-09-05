@@ -2,7 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { getDictionary } from "@/i18n/dictionaries";
 import { formatYen } from "@/lib/access";
 import { getSessionUser } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { ensureBootstrapped } from "@/lib/db";
 import { isLocale, type Locale } from "@/lib/locale";
 
 export default async function AdminPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -16,7 +16,7 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
     return <div className="surface p-8 text-ember-soft">{t.accessDenied}</div>;
   }
 
-  const db = getDb();
+  const db = await ensureBootstrapped();
   const learners = (db.prepare(`SELECT COUNT(*) as c FROM users WHERE role = 'learner'`).get() as { c: number }).c;
   const revenue = (
     db.prepare(`SELECT COALESCE(SUM(amount_jpy),0) as s FROM orders WHERE status = 'paid'`).get() as {

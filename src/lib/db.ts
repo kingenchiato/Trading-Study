@@ -254,10 +254,15 @@ export function getDb(): AppDatabase {
 
 export async function ensureBootstrapped() {
   if (!globalForDb.__nexoraInit) {
-    globalForDb.__nexoraInit = createDb().then((db) => {
-      globalForDb.__nexoraDb = db;
-      return db;
-    });
+    globalForDb.__nexoraInit = createDb()
+      .then((db) => {
+        globalForDb.__nexoraDb = db;
+        return db;
+      })
+      .catch((err) => {
+        globalForDb.__nexoraInit = undefined;
+        throw err;
+      });
   }
   const db = await globalForDb.__nexoraInit;
   if (!globalForDb.__nexoraBootstrapped) {

@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getDictionary } from "@/i18n/dictionaries";
 import { courseProgress, userHasCourseAccess } from "@/lib/access";
 import { certificateCode, getSessionUser, newId } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { ensureBootstrapped, getDb } from "@/lib/db";
 import { isLocale, localize, type Locale } from "@/lib/locale";
 import { LessonActions } from "@/components/LessonActions";
 
@@ -21,7 +21,7 @@ export default async function LearnPage({
   const user = await getSessionUser();
   if (!user) redirect(`/${locale}/login?next=/${locale}/learn/${slug}`);
 
-  const db = getDb();
+  const db = await ensureBootstrapped();
   const courseRow = db.prepare(`SELECT * FROM courses WHERE slug = ?`).get(slug) as
     | Record<string, unknown>
     | undefined;

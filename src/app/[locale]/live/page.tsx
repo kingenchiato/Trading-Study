@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getDictionary } from "@/i18n/dictionaries";
 import { formatYen } from "@/lib/access";
 import { getSessionUser } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { ensureBootstrapped } from "@/lib/db";
 import { isLocale, localize, type Locale } from "@/lib/locale";
 import { LiveBookButton } from "@/components/LiveBookButton";
 
@@ -12,7 +12,7 @@ export default async function LivePage({ params }: { params: Promise<{ locale: s
   const locale = raw as Locale;
   const t = getDictionary(locale);
   const user = await getSessionUser();
-  const db = getDb();
+  const db = await ensureBootstrapped();
 
   const sessions = (
     db

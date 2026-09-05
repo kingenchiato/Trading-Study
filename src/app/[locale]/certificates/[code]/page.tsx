@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getDictionary } from "@/i18n/dictionaries";
-import { getDb } from "@/lib/db";
+import { ensureBootstrapped } from "@/lib/db";
 import { isLocale, localize, type Locale } from "@/lib/locale";
 
 export default async function CertificatePage({
@@ -14,7 +14,8 @@ export default async function CertificatePage({
   const locale = raw as Locale;
   const t = getDictionary(locale);
 
-  const row = getDb()
+  const db = await ensureBootstrapped();
+  const row = db
     .prepare(
       `SELECT cert.*, u.name as user_name, c.title_ja, c.title_en
        FROM certificates cert

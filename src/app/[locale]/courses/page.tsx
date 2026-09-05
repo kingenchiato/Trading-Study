@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CourseCard } from "@/components/CourseCard";
 import { getDictionary } from "@/i18n/dictionaries";
-import { getDb } from "@/lib/db";
+import { ensureBootstrapped } from "@/lib/db";
 import { isLocale, localize, type Locale } from "@/lib/locale";
 
 export default async function CoursesPage({
@@ -17,7 +17,7 @@ export default async function CoursesPage({
   const locale = raw as Locale;
   const t = getDictionary(locale);
   const { q = "", category = "" } = await searchParams;
-  const db = getDb();
+  const db = await ensureBootstrapped();
 
   const categories = db
     .prepare(`SELECT DISTINCT category FROM courses WHERE is_published = 1 ORDER BY category`)

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSessionUser } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { ensureBootstrapped } from "@/lib/db";
 import { isLocale, type Locale } from "@/lib/locale";
 import {
   fulfillCoursePurchase,
@@ -26,7 +26,7 @@ export default async function CheckoutSuccessPage({
   const user = await getSessionUser();
 
   if (user && order) {
-    const db = getDb();
+    const db = await ensureBootstrapped();
     const row = db.prepare(`SELECT * FROM orders WHERE id = ? AND user_id = ?`).get(order, user.id) as
       | { id: string; kind: string; reference_id: string; status: string }
       | undefined;

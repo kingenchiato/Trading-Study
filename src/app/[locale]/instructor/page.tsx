@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getDictionary } from "@/i18n/dictionaries";
-import { getDb } from "@/lib/db";
+import { ensureBootstrapped } from "@/lib/db";
 import { isLocale, type Locale } from "@/lib/locale";
 
 export default async function InstructorPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -9,7 +9,8 @@ export default async function InstructorPage({ params }: { params: Promise<{ loc
   if (!isLocale(raw)) notFound();
   const locale = raw as Locale;
   const t = getDictionary(locale);
-  const admin = getDb()
+  const db = await ensureBootstrapped();
+  const admin = db
     .prepare(`SELECT name, avatar_url, email FROM users WHERE role = 'admin' LIMIT 1`)
     .get() as { name: string; avatar_url: string | null; email: string } | undefined;
 
