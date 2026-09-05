@@ -7,7 +7,7 @@ import {
   fulfillLiveBooking,
   fulfillSubscription,
 } from "@/lib/commerce";
-import { getDb } from "@/lib/db";
+import { ensureBootstrapped, getDb } from "@/lib/db";
 import { assertSameOrigin } from "@/lib/security";
 import { appUrl, getStripe, localCheckoutAllowed, stripeEnabled } from "@/lib/stripe";
 
@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  await ensureBootstrapped();
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

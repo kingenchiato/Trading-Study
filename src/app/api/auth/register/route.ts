@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSession, hashPassword, newId } from "@/lib/auth";
-import { getDb } from "@/lib/db";
 import {
   assertSameOrigin,
   authDelay,
@@ -23,6 +22,9 @@ export async function POST(request: Request) {
   if (!assertSameOrigin(request)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  const { ensureBootstrapped, getDb } = await import("@/lib/db");
+  await ensureBootstrapped();
 
   const ip = clientIp(request);
   if (isRateLimited(ip, "register")) {

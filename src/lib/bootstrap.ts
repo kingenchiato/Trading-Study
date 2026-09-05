@@ -1,13 +1,13 @@
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import type Database from "better-sqlite3";
+import type { AppDatabase } from "./db";
 
 function id(prefix = "") {
   return `${prefix}${randomBytes(10).toString("hex")}`;
 }
 
 /** Ensure catalog + admin exist (safe to call repeatedly). */
-export async function bootstrapDatabase(db: Database.Database) {
+export async function bootstrapDatabase(db: AppDatabase) {
   const adminEmail = (process.env.ADMIN_EMAIL || "kingenchiato@gmail.com").toLowerCase().trim();
   const adminPassword = process.env.ADMIN_PASSWORD || "qweqweqwe123!@#";
   const adminName = process.env.ADMIN_NAME || "Sガンダム";

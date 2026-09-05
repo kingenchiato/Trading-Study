@@ -5,10 +5,11 @@ import {
   fulfillLiveBooking,
   fulfillSubscription,
 } from "@/lib/commerce";
-import { getDb } from "@/lib/db";
+import { ensureBootstrapped, getDb } from "@/lib/db";
 import { getStripe } from "@/lib/stripe";
 
 export async function POST(request: Request) {
+  await ensureBootstrapped();
   const stripe = getStripe();
   if (!stripe) return NextResponse.json({ error: "Stripe disabled" }, { status: 400 });
 

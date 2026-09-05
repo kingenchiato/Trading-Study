@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
-import { getDb, type User } from "./db";
+import type { User } from "./db";
 import { ensureSecurityTables } from "./security";
 
 const COOKIE = "nexora_session";
@@ -53,6 +53,8 @@ export async function destroySession() {
 }
 
 export async function getSessionUser(): Promise<User | null> {
+  const { ensureBootstrapped, getDb } = await import("./db");
+  await ensureBootstrapped();
   const jar = await cookies();
   const token = jar.get(COOKIE)?.value;
   if (!token) return null;
