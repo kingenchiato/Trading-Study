@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --bg: #05070c;
+  --fg: #e8eef8;
+  --font-display: "Bahnschrift", "Segoe UI Semibold", "Yu Gothic UI", "Hiragino Sans", sans-serif;
+  --font-body: "Segoe UI Variable Text", "Segoe UI", "Yu Gothic UI", "Hiragino Sans", sans-serif;
+  --font-mono: "Cascadia Code", "Consolas", "Yu Gothic UI", monospace;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body), "Segoe UI", sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(61, 255, 181, 0.28);
+  color: #fff;
+}
+
+.surface {
+  @apply rounded-2xl border border-white/10 bg-ink-800/70 backdrop-blur-md;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition duration-200;
+}
+
+.btn-primary {
+  @apply btn bg-signal text-ink-950 hover:bg-signal-glow shadow-signal;
+}
+
+.btn-ghost {
+  @apply btn border border-white/15 bg-white/5 text-mist hover:border-signal/40 hover:text-white;
+}
+
+.btn-danger {
+  @apply btn border border-ember/40 bg-ember/10 text-ember-soft hover:bg-ember/20;
+}
+
+.input {
+  @apply w-full rounded-xl border border-white/10 bg-ink-900 px-4 py-3 text-sm text-white outline-none ring-signal/0 transition placeholder:text-mist-muted focus:border-signal/50 focus:ring-2 focus:ring-signal/20;
+}
+
+.badge {
+  @apply inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider text-mist;
+}
+
+.prose-nexora h2 {
+  @apply mb-3 mt-6 text-xl font-semibold text-white;
+}
+
+.prose-nexora p,
+.prose-nexora li {
+  @apply text-mist leading-relaxed;
+}
+
+.prose-nexora ol {
+  @apply list-decimal space-y-2 pl-5;
+}
