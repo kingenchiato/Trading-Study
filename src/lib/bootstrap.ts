@@ -21,10 +21,21 @@ export async function bootstrapDatabase(db: AppDatabase) {
 
   if (!instructorId) {
     instructorId = id("usr_");
-    db.prepare(
-      `INSERT INTO users (id, email, password_hash, name, role, locale, avatar_url)
-       VALUES (?, ?, ?, ?, 'admin', 'ja', '/admin-avatar.png?v=sgundam')`,
-    ).run(instructorId, adminEmail, hash, adminName);
+    try {
+      db.prepare(
+        `INSERT INTO users (id, email, password_hash, name, role, locale, avatar_url)
+         VALUES (?, ?, ?, ?, 'admin', 'ja', '/admin-avatar.png?v=sgundam')`,
+      ).run(instructorId, adminEmail, hash, adminName);
+    } catch {
+      const raced = db.prepare("SELECT id FROM users WHERE email = ?").get(adminEmail) as
+        | { id: string }
+        | undefined;
+      if (!raced?.id) throw new Error("Failed to create admin user");
+      instructorId = raced.id;
+      db.prepare(
+        `UPDATE users SET name = ?, role = 'admin', avatar_url = '/admin-avatar.png?v=sgundam', password_hash = ? WHERE id = ?`,
+      ).run(adminName, hash, instructorId);
+    }
   } else {
     db.prepare(
       `UPDATE users SET name = ?, role = 'admin', avatar_url = '/admin-avatar.png?v=sgundam', password_hash = ? WHERE id = ?`,
@@ -39,10 +50,14 @@ export async function bootstrapDatabase(db: AppDatabase) {
   const demo = db.prepare("SELECT id FROM users WHERE email = ?").get("learner@nexora.jp");
   if (!demo) {
     const learnerHash = await bcrypt.hash("Learner!2026", 12);
-    db.prepare(
-      `INSERT INTO users (id, email, password_hash, name, role, locale)
-       VALUES (?, ?, ?, ?, 'learner', 'ja')`,
-    ).run(id("usr_"), "learner@nexora.jp", learnerHash, "デモ学習者");
+    try {
+      db.prepare(
+        `INSERT INTO users (id, email, password_hash, name, role, locale)
+         VALUES (?, ?, ?, ?, 'learner', 'ja')`,
+      ).run(id("usr_"), "learner@nexora.jp", learnerHash, "デモ学習者");
+    } catch {
+      // concurrent bootstrap may already have created the demo learner
+    }
   }
 
   db.prepare("DELETE FROM plans").run();

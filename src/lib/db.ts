@@ -152,6 +152,7 @@ const globalForDb = globalThis as unknown as {
   __nexoraDb?: AppDatabase;
   __nexoraBootstrapped?: boolean;
   __nexoraInit?: Promise<AppDatabase>;
+  __nexoraSeed?: Promise<void>;
 };
 
 function resolveDbPath() {
@@ -265,12 +266,22 @@ export async function ensureBootstrapped() {
       });
   }
   const db = await globalForDb.__nexoraInit;
+
   if (!globalForDb.__nexoraBootstrapped) {
-    const { bootstrapDatabase } = await import("./bootstrap");
-    await bootstrapDatabase(db);
-    globalForDb.__nexoraBootstrapped = true;
-    if (globalForDb.__nexoraSql) persist(globalForDb.__nexoraSql);
+    if (!globalForDb.__nexoraSeed) {
+      globalForDb.__nexoraSeed = (async () => {
+        const { bootstrapDatabase } = await import("./bootstrap");
+        await bootstrapDatabase(db);
+        globalForDb.__nexoraBootstrapped = true;
+        if (globalForDb.__nexoraSql) persist(globalForDb.__nexoraSql);
+      })().catch((err) => {
+        globalForDb.__nexoraSeed = undefined;
+        throw err;
+      });
+    }
+    await globalForDb.__nexoraSeed;
   }
+
   return db;
 }
 
