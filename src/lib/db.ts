@@ -1,13 +1,25 @@
 import Database from "better-sqlite3";
 import fs from "fs";
+import os from "os";
 import path from "path";
 
-const dataDir = path.join(process.cwd(), "data");
+function resolveDataDir() {
+  // Vercel / serverless: only /tmp is writable
+  if (process.env.VERCEL || process.env.NEXORA_DB_DIR === "tmp") {
+    return path.join(os.tmpdir(), "nexora-data");
+  }
+  return path.join(process.cwd(), "data");
+}
+
+const dataDir = resolveDataDir();
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
 const dbPath = path.join(dataDir, "nexora.db");
 
-const globalForDb = globalThis as unknown as { __nexoraDb?: Database.Database };
+const globalForDb = globalThis as unknown as {
+  __nexoraDb?: Database.Database;
+  __nexoraBootstrapped?: boolean;
+};
 
 function createDb() {
   const db = new Database(dbPath);
@@ -163,6 +175,16 @@ export function getDb() {
     globalForDb.__nexoraDb = createDb();
   }
   return globalForDb.__nexoraDb;
+}
+
+/** Call from server entry points to ensure seed + admin on cold start (e.g. Vercel). */
+export async function ensureBootstrapped() {
+  const db = getDb();
+  if (globalForDb.__nexoraBootstrapped) return db;
+  const { bootstrapDatabase } = await import("./bootstrap");
+  await bootstrapDatabase(db);
+  globalForDb.__nexoraBootstrapped = true;
+  return db;
 }
 
 export type User = {

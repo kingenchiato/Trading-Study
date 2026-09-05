@@ -3,6 +3,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSessionUser } from "@/lib/auth";
+import { ensureBootstrapped } from "@/lib/db";
 import { isLocale, type Locale } from "@/lib/locale";
 
 export default async function LocaleLayout({
@@ -12,6 +13,7 @@ export default async function LocaleLayout({
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
 }) {
+  await ensureBootstrapped();
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
   const locale = raw as Locale;

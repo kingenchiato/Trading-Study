@@ -50,39 +50,44 @@ Open http://localhost:3000 (redirects to `/ja`).
 
 Rotate `AUTH_SECRET` and admin password before public launch.
 
-## Deploy online (from this GitHub repo)
+## Deploy online with Vercel (standard Next.js flow)
 
 Repo: https://github.com/kingenchiato/Trading-Study
 
-### Recommended: Render (connect GitHub → public HTTPS URL)
+This is the same flow most Next.js apps use:
 
-1. Open [https://dashboard.render.com/select-repo?type=web](https://dashboard.render.com/select-repo?type=web)
-2. Sign in with GitHub and select **`kingenchiato/Trading-Study`**
-3. Settings:
-   - **Build Command:** `npm ci && npm run build`
-   - **Start Command:** `npm run start:online`
-   - **Instance:** Free
-4. Environment variables:
+1. Open **[vercel.com/new](https://vercel.com/new)**
+2. Sign in with **GitHub**
+3. Import **`kingenchiato/Trading-Study`**
+4. Framework Preset: **Next.js** (auto-detected)
+5. Add **Environment Variables** before deploy:
 
-| Key | Value |
-|-----|--------|
+| Name | Value |
+|------|--------|
 | `AUTH_SECRET` | long random string (32+ chars) |
 | `ADMIN_EMAIL` | `kingenchiato@gmail.com` |
-| `ADMIN_PASSWORD` | your admin password |
+| `ADMIN_PASSWORD` | your password |
 | `ADMIN_NAME` | `Sガンダム` |
-| `NEXT_PUBLIC_APP_URL` | your Render URL, e.g. `https://nexora-xxxx.onrender.com` |
-| `ALLOW_LOCAL_CHECKOUT` | `true` (until Stripe is configured) |
+| `NEXT_PUBLIC_APP_URL` | leave blank first, or set after you get the `*.vercel.app` URL |
+| `ALLOW_LOCAL_CHECKOUT` | `true` |
 
-5. Deploy → open the Render URL → `/ja/login`
+6. Click **Deploy**
+7. After deploy succeeds, open the project → **Settings → Environment Variables** → set `NEXT_PUBLIC_APP_URL` to `https://YOUR-PROJECT.vercel.app` → **Redeploy**
+8. Visit `https://YOUR-PROJECT.vercel.app/ja/login`
 
-Note: Free Render sleeps after idle and may reset the SQLite file on redeploy unless you add a paid disk. Re-seed happens automatically via `start:online` when the DB is missing.
-
-### Docker (VPS / Railway)
+### CLI alternative (if you use it locally)
 
 ```bash
-docker build -t nexora .
-docker run -p 3000:3000 --env-file .env.local -v nexora-data:/app/data nexora
+npm i -g vercel
+cd "D:\Robort-AI trading"
+vercel login
+vercel
+vercel --prod
+vercel env add AUTH_SECRET
+# ...add the other env vars, then redeploy
 ```
+
+**Note:** On Vercel the SQLite file lives in `/tmp` (serverless). It is fine for viewing/demo; for long-term production data, move to a hosted DB (Turso/Neon) later.
 
 
 ## Business model (built-in)
