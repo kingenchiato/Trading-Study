@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CourseCard } from "@/components/CourseCard";
+import { MarketPriceChart } from "@/components/MarketPriceChart";
 import { getDictionary } from "@/i18n/dictionaries";
 import { ensureBootstrapped } from "@/lib/db";
 import { isLocale, localize, type Locale } from "@/lib/locale";
@@ -81,6 +82,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </div>
         </div>
       </section>
+
+      <MarketPriceChart locale={locale} t={t} />
 
       <section>
         <div className="mb-6 flex items-end justify-between gap-4">
